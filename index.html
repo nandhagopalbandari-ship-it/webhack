@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Management System</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #2ecc71;
+            --background: #f8f9fa;
+            --text: #2c3e50;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            color: var(--primary);
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 8px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        input, select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .list-container {
+            max-height: 250px;
+            overflow-y: auto;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        .list-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>College Management System</h1>
+        <p>Interactive Database Dashboard</p>
+    </header>
+
+    <div class="container">
+
+        <div class="card">
+            <h2>Students</h2>
+            <form id="student-form">
+                <input type="text" id="stud-id" placeholder="Student ID" required>
+                <input type="text" id="stud-name" placeholder="Full Name" required>
+                <input type="email" id="stud-email" placeholder="Email Address" required>
+                <button type="submit">Add Student</button>
+            </form>
+            <div class="list-container" id="students-list">
+                </div>
+        </div>
+
+        <div class="card">
+            <h2>Instructors</h2>
+            <form id="instructor-form">
+                <input type="text" id="inst-id" placeholder="Instructor ID" required>
+                <input type="text" id="inst-name" placeholder="Full Name" required>
+                <input type="text" id="inst-dept" placeholder="Department" required>
+                <button type="submit">Add Instructor</button>
+            </form>
+            <div class="list-container" id="instructors-list">
+                </div>
+        </div>
+
+        <div class="card">
+            <h2>Courses</h2>
+            <form id="course-form">
+                <input type="text" id="course-code" placeholder="Course Code" required>
+                <input type="text" id="course-name" placeholder="Course Name" required>
+                <select id="course-inst">
+                    <option value="">Assign Instructor (Optional)</option>
+                </select>
+                <button type="submit">Create Course</button>
+            </form>
+            <div class="list-container" id="courses-list">
+                </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = ''; // Relative paths because Flask serves both UI and API
+
+        // Helper to fetch and display data
+        async function loadData() {
+            // 1. Fetch & Load Students
+            const resStudents = await fetch('/api/students');
+            const students = await resStudents.json();
+            const studentsList = document.getElementById('students-list');
+            studentsList.innerHTML = '';
+            students.forEach(s => {
+                studentsList.innerHTML += `<div class="list-item"><strong>[${s.id}]</strong> ${s.name} (${s.email})</div>`;
+            });
+
+            // 2. Fetch & Load Instructors
+            const resInstructors = await fetch('/api/instructors');
+            const instructors = await resInstructors.json();
+            const instructorsList = document.getElementById('instructors-list');
+            const courseInstDropdown = document.getElementById('course-inst');
+            
+            instructorsList.innerHTML = '';
+            courseInstDropdown.innerHTML = '<option value="">Assign Instructor (Optional)</option>';
+            
+            instructors.forEach(inst => {
+                instructorsList.innerHTML += `<div class="list-item"><strong>[${inst.id}]</strong> ${inst.name} - <em>${inst.department}</em></div>`;
+                courseInstDropdown.innerHTML += `<option value="${inst.id}">${inst.name}</option>`;
+            });
+
+            // 3. Fetch & Load Courses
+            const resCourses = await fetch('/api/courses');
+            const courses = await resCourses.json();
+            const coursesList = document.getElementById('courses-list');
+            coursesList.innerHTML = '';
+            courses.forEach(c => {
+                const instructorName = c.instructor_name ? c.instructor_name : 'No Instructor assigned';
+                coursesList.innerHTML += `<div class="list-item"><strong>[${c.code}]</strong> ${c.name} <br><small style="color: #7f8c8d;">Instructor: ${instructorName}</small></div>`;
+            });
+        }
+
+        // Generic Submit Handler
+        async function submitForm(endpoint, data) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                alert(result.message);
+                loadData();
+            } else {
+                alert(result.error || 'Something went wrong!');
+            }
+        }
+
+        // Form Submit Event Listeners
+        document.getElementById('student-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const data = {
+                id: document.getElementById('stud-id').value,
+                name: document.getElementById('stud-name').value,
+                email: document.getElementById('stud-email').value
+            };
+            submitForm('/api/students', data);
+            e.target.reset();
+        });
+
+        document.getElementById('instructor-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const data = {
+                id: document.getElementById('inst-id').value,
+                name: document.getElementById('inst-name').value,
+                department: document.getElementById('inst-dept').value
+            };
+            submitForm('/api/instructors', data);
+            e.target.reset();
+        });
+
+        document.getElementById('course-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const data = {
+                code: document.getElementById('course-code').value,
+                name: document.getElementById('course-name').value,
+                instructor_id: document.getElementById('course-inst').value || null
+            };
+            submitForm('/api/courses', data);
+            e.target.reset();
+        });
+
+        // Initial Load when Page opens
+        window.onload = loadData;
+    </script>
+</body>
+</html>
